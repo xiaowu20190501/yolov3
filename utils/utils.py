@@ -542,7 +542,7 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, multi_label=T
                 x[i, :4] = torch.mm(weights, x[:, :4]).float() / weights.sum(1, keepdim=True)  # merged boxes
                 # i = i[iou.sum(1) > 1]  # require redundancy
             except:  # possible CUDA error https://github.com/ultralytics/yolov3/issues/1139
-                print(x, i, x.shape, i.shape)
+                # print(x, i, x.shape, i.shape)
                 pass
 
         output[xi] = x[i]

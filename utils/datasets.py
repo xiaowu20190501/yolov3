@@ -100,8 +100,7 @@ class LoadImages:  # for inference
             print('image %g/%g %s: ' % (self.count, self.nF, path), end='')
 
         # Padded resize
-        img = letterbox(img0, new_shape=self.img_size)[0]
-
+        img = letterbox(img0, new_shape=self.img_size)[0]  # e.g. if net 512, video 720*1280, than [320, 512]
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
@@ -112,7 +111,7 @@ class LoadImages:  # for inference
     def new_video(self, path):
         self.frame = 0
         self.cap = cv2.VideoCapture(path)
-        self.nframes = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.nframes = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))  # get total frame number of video 1203
 
     def __len__(self):
         return self.nF  # number of files
