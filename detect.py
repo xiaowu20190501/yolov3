@@ -78,9 +78,14 @@ def detect(save_img=False):
     img = torch.zeros((1, 3, imgsz, imgsz), device=device)  # init img
     _ = model(img.half() if half else img.float()) if device.type != 'cpu' else None  # run once
     
+    # init every frame time list, latency time after 1s
     frame_time = []
     time_sum = 0
     frame_num = 0
+    
+    latency_time = []
+    latency_sum = 0
+    latency_num = 0
 
     for path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
@@ -91,9 +96,9 @@ def detect(save_img=False):
 
         # Inference
         t1 = torch_utils.time_synchronized()
+
         pred = model(img, augment=opt.augment)[0]
         # t2 = torch_utils.time_synchronized()
-
 
         # to float
         if half:
@@ -102,9 +107,8 @@ def detect(save_img=False):
         # Apply NMS
         pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres,
                                    multi_label=False, classes=opt.classes, agnostic=opt.agnostic_nms)
-
         t2 = torch_utils.time_synchronized()
-        
+
         # Apply Classifier
         if classify:
             pred = apply_classifier(pred, modelc, img, im0s)
@@ -139,22 +143,23 @@ def detect(save_img=False):
                         label = '%s %.2f' % (names[int(cls)], conf)
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)])
 
-            # Latency
-            # t4 = torch_utils.time_synchronized()
-            # t3 = 
-            # while (t4-t3) == 1:
-            #     pass
-
-
             # Print time (inference + NMS)
             print('%sDone. (%.3fs)' % (s, t2 - t1))
             frame_time.append(t2 - t1)
             time_sum += frame_time[frame_num]
-            real_fps = 1.0/(time_sum/len(frame_time))
-            print("AVG_FPS: %f"%(real_fps))
+            avg_fps = 1.0/(time_sum/len(frame_time))
+            print("AVG_FPS: %f"%(avg_fps))
+            # print(time_sum)
             frame_num += 1
 
-
+            if (time_sum % 1) <= 0.02:
+                latency_time_ = t2 - t1
+                latency_time.append(latency_time_)
+                latency_sum += latency_time_
+            
+            if len(latency_time) != 0:
+                avg_latency = latency_sum / len(latency_time)
+                print("AVG_Latency: %f"%(avg_latency))
 
             # Stream results
             if view_img:
@@ -185,8 +190,10 @@ def detect(save_img=False):
 
     print('Done. (%.3fs)' % (time.time() - t0))
 
-# python detect.py --cfg cfg/yolov4.cfg --weights /home/aiden00/abwu_workspace/yolov4/yolov4.weights --source /home/aiden00/abwu_workspace/yolov4/test4.mp4 --img-size 608
-# python detect.py --cfg cfg/yolov4.cfg --weights /home/aiden00/abwu_workspace/yolov4/yolov4.weights --source /home/aiden00/abwu_workspace/yolov4/dog.jpg
+# python detect.py --cfg /home/aiden00/abwu_workspace/yolov4/yolov4.cfg --weights /home/aiden00/abwu_workspace/yolov4/yolov4.weights --source /home/aiden00/abwu_workspace/yolov4/test4.mp4 --img-size 608
+# python detect.py --cfg cfg/yolov3.cfg --weights /home/aiden00/abwu_workspace/yolov4/yolov3.weights --source /home/aiden00/abwu_workspace/yolov4/test4.mp4 --img-size 608
+# python detect.py --cfg /home/aiden00/abwu_workspace/yolov4/yolov4.cfg --weights /home/aiden00/abwu_workspace/yolov4/yolov4.weights --source /home/aiden00/abwu_workspace/yolov4/dog.jpg --img-size 608
+# python detect.py --cfg cfg/yolov3.cfg --weights /home/aiden00/abwu_workspace/yolov4/yolov3.weights --source /home/aiden00/abwu_workspace/yolov4/dog.jpg --img-size 608
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp.cfg', help='*.cfg path')
